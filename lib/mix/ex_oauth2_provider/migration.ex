@@ -98,11 +98,10 @@ defmodule Mix.ExOauth2Provider.Migration do
   end
 
   defp schema(module, table, namespace, %{binary_id: binary_id}) do
-    attrs =
+    attrs           =
       module.attrs()
       |> Kernel.++(attrs_from_assocs(module.assocs(), namespace))
       |> migration_attrs()
-
     defaults        = defaults(attrs)
     {assocs, attrs} = partition_attrs(attrs)
     table           = "#{namespace}_#{table}"

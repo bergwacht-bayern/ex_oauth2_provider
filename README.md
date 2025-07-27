@@ -1,5 +1,7 @@
 # ExOauth2Provider
 
+Forked from https://github.com/danschultzer/ex_oauth2_provider and https://github.com/lukyanov/ex_oauth2_provider.
+
 [![Github CI](https://github.com/danschultzer/ex_oauth2_provider/workflows/CI/badge.svg)](https://github.com/danschultzer/ex_oauth2_provider/actions?query=workflow%3ACI)
 [![hex.pm](http://img.shields.io/hexpm/v/ex_oauth2_provider.svg?style=flat)](https://hex.pm/packages/ex_oauth2_provider)
 [![hex.pm downloads](https://img.shields.io/hexpm/dt/ex_oauth2_provider.svg?style=flat)](https://hex.pm/packages/ex_oauth2_provider)
@@ -14,7 +16,7 @@ Add ExOauth2Provider to your list of dependencies in `mix.exs`:
 def deps do
   [
     # ...
-    {:ex_oauth2_provider, "~> 0.5.7"}
+    {:ex_oauth2_provider, git: "https://github.com/bergwacht-bayern/ex_oauth2_provider.git"}
     # ...
   ]
 end
@@ -93,7 +95,22 @@ Revocation will return `{:ok, %{}}` status even if the token is invalid.
 
 ### Authorization code flow in a Single Page Application
 
-ExOauth2Provider doesn't support **implicit** grant flow. Instead you should set up an application with no client secret, and use the **Authorize code** grant flow. `client_secret` isn't required unless it has been set for the application.
+ExOauth2Provider doesn't support **implicit** grant flow. Instead you should set up an application with no client secret, and use the **Authorize code** grant flow. `client_secret` isn't required unless it has been set for the application. 
+
+It's **strongly** encouraged to enable PKCE for these applications.
+
+#### PKCE
+
+Enable PKCE in configuration `config/config.ex`:
+
+```elixir
+config :my_app, ExOauth2Provider,
+  # ...
+  # this will enable PKCE support
+  use_pkce: true
+```
+
+When making an authorization code flow you are now required to provide a `code_challenge` and `code_challenge_method` query fields for the authorization request and `code_verifier` field for the access token request, as per [RFC-7637](https://datatracker.ietf.org/doc/html/rfc7636).
 
 ### Other supported token grants
 

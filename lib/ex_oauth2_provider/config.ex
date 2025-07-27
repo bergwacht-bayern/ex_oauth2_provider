@@ -8,7 +8,7 @@ defmodule ExOauth2Provider.Config do
 
       Please set up the repo in your configuration:
 
-      config #{inspect Keyword.get(config, :otp_app, :ex_oauth2_provider)}, ExOauth2Provider,
+      config #{inspect(Keyword.get(config, :otp_app, :ex_oauth2_provider))}, ExOauth2Provider,
         repo: MyApp.Repo
       """
   end
@@ -100,6 +100,11 @@ defmodule ExOauth2Provider.Config do
   def use_refresh_token?(config),
     do: get(config, :use_refresh_token, false)
 
+  # Use PKCE for 'authorization code' grant type (https://datatracker.ietf.org/doc/html/rfc7636)
+  @spec use_pkce?(keyword()) :: boolean()
+  def use_pkce?(config),
+    do: get(config, :use_pkce, false)
+
   # Password auth method to use. Disabled by default. When set, it'll enable
   # password auth strategy. Set config as:
   # `password_auth: {MyModule, :my_auth_method}`
@@ -160,5 +165,6 @@ defmodule ExOauth2Provider.Config do
     |> Application.get_env(ExOauth2Provider, [])
     |> Keyword.get(key, :not_found)
   end
+
   defp get_from_global_env(value, _key), do: value
 end

@@ -62,7 +62,7 @@ defmodule Mix.Tasks.ExOauth2Provider.Install do
 
     Mix.shell.info(
       """
-      ExOauth2Provider has been installed! Please append the following to `config/config.ex`:
+      ExOauth2Provider has been installed! Please append the following to `config/config.exs`:
 
       #{content}
       """)

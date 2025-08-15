@@ -68,8 +68,8 @@ defmodule ExOauth2Provider.Token.RefreshToken do
     end
   end
 
-  defp token_params(%{scopes: scopes, application: application} = refresh_token, config) do
-    params = %{scopes: scopes, application: application, use_refresh_token: true}
+  defp token_params(%{scopes: scopes, application: application, nonce: nonce} = refresh_token, config) do
+    params = %{scopes: scopes, application: application, use_refresh_token: true, nonce: nonce}
 
     case Config.refresh_token_revoked_on_use?(config) do
       true  -> Map.put(params, :previous_refresh_token, refresh_token)

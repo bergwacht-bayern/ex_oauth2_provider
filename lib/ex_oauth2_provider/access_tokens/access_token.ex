@@ -29,7 +29,8 @@ defmodule ExOauth2Provider.AccessTokens.AccessToken do
       {:expires_in, :integer},
       {:revoked_at, :utc_datetime},
       {:scopes, :string},
-      {:previous_refresh_token, :string, [default: ""], null: false}
+      {:previous_refresh_token, :string, [default: ""], null: false},
+      {:nonce, :string}
     ]
   end
 
@@ -71,7 +72,7 @@ defmodule ExOauth2Provider.AccessTokens.AccessToken do
     server_scopes = server_scopes(token)
 
     token
-    |> Changeset.cast(params, [:expires_in, :scopes])
+    |> Changeset.cast(params, [:expires_in, :scopes, :nonce])
     |> validate_application_or_resource_owner()
     |> put_previous_refresh_token(params[:previous_refresh_token])
     |> put_refresh_token(params[:use_refresh_token])

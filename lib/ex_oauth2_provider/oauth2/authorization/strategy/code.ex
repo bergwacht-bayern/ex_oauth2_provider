@@ -150,6 +150,13 @@ defmodule ExOauth2Provider.Authorization.Code do
       Map.take(request, ["redirect_uri", "scope"])
     end
 
+    nonce = String.trim(request["nonce"] || "")
+    filtered_request = if nonce != nil and nonce != "" do
+      Map.merge(filtered_request, %{"nonce" => nonce})
+    else
+      filtered_request
+    end
+
     grant_params = filtered_request
       |> Map.new(fn {k, v} ->
         case k do

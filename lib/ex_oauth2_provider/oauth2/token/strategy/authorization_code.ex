@@ -40,7 +40,7 @@ defmodule ExOauth2Provider.Token.AuthorizationCode do
 
   defp issue_access_token_by_grant({:error, params}, _config), do: {:error, params}
   defp issue_access_token_by_grant({:ok, %{access_grant: access_grant, request: _} = params}, config) do
-    token_params = %{use_refresh_token: Config.use_refresh_token?(config)}
+    token_params = %{use_refresh_token: Config.use_refresh_token?(config), nonce: access_grant.nonce}
 
     result = Config.repo(config).transaction(fn ->
       access_grant

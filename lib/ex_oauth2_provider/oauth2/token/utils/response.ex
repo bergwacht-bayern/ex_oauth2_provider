@@ -22,8 +22,11 @@ defmodule ExOauth2Provider.Token.Utils.Response do
               expires_in: access_token.expires_in,
               refresh_token: access_token.refresh_token,
               scope: access_token.scopes,
-              created_at: access_token.inserted_at
-            } |> customize_access_token_response(access_token, config)
+              created_at: access_token.inserted_at,
+              nonce: access_token.nonce
+            }
+            |> Map.reject(fn {_key, val} -> val == nil end)
+            |> customize_access_token_response(access_token, config)
     {:ok, body}
   end
   defp build_response(%{error: error, error_http_status: error_http_status}, _config) do

@@ -30,7 +30,7 @@ defmodule ExOauth2Provider.Plug.VerifyHeader do
   @spec init(keyword()) :: keyword()
   def init(opts \\ []) do
     opts
-    |> Keyword.get(:realm)
+    |> Keyword.get(:realm, "Bearer")
     |> maybe_set_realm_option(opts)
   end
 

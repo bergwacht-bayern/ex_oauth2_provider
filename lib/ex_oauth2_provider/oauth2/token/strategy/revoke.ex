@@ -65,9 +65,27 @@ defmodule ExOauth2Provider.Token.Revoke do
     token
     |> AccessTokens.get_by_token(config)
     |> case do
-      nil          -> Error.add_error({:ok, params}, Error.invalid_request())
+      nil          -> get_access_token_as_hint({:ok, params}, config)
       access_token -> {:ok, Map.put(params, :access_token, access_token)}
     end
+  end
+
+  defp get_access_token_as_hint({:ok, %{request: %{"token" => token}} = params}, config) do
+    with token_data when is_map(token_data) <- JOSE.JWT.peek(token),
+         nonce when is_binary(nonce) <- token_data.fields["nonce"] do
+      nonce
+      |> AccessTokens.get_by_nonce(config)
+      |> case do
+        nil -> Error.add_error({:ok, params}, Error.invalid_request())
+        access_token -> {:ok, Map.put(params, :access_token, access_token)}
+      end
+    else
+      _ -> Error.add_error({:ok, params}, Error.invalid_request())
+    end
+  end
+
+  defp get_access_token_as_hint(params, _config) do
+    Error.add_error({:ok, params}, Error.invalid_request())
   end
 
   defp get_refresh_token({:ok, %{access_token: _} = params}, _config), do: {:ok, params}
@@ -117,7 +135,7 @@ defmodule ExOauth2Provider.Token.Revoke do
   # Client is confidential, therefore client authentication & authorization is required
   defp validate_permissions({:ok, %{access_token: %{application_id: _id}} = params}), do: validate_ownership({:ok, params})
 
-  defp validate_ownership({:ok, %{access_token: %{application_id: application_id}, client: %{id: client_id}} = params}) when application_id == client_id, do: {:ok, params}
+  defp validate_ownership({:ok, %{access_token: %{application_id: application_id, application: %{id: client_id}}} = params}) when application_id == client_id, do: {:ok, params}
   defp validate_ownership({:ok, params}), do: Error.add_error({:ok, params}, Error.invalid_request())
 
   defp validate_accessible({:error, params}), do: {:error, params}

@@ -62,11 +62,12 @@ defmodule ExOauth2Provider.Token.AuthorizationCode do
   defp maybe_create_access_token({:ok, %{resource_owner: resource_owner, application: application, scopes: scopes}}, token_params, config) do
     token_params = Map.merge(token_params, %{scopes: scopes, application: application})
 
-    resource_owner
-    |> AccessTokens.get_token_for(application, scopes, config)
-    |> case do
-      nil          -> AccessTokens.create_token(resource_owner, token_params, config)
-      access_token -> {:ok, access_token}
+    with access_token when is_struct(access_token, Ticker.OauthAccessTokens.OauthAccessToken) <-
+           AccessTokens.get_token_for(resource_owner, application, scopes, config),
+         true <- token_params[:nonce] == access_token.nonce do
+      {:ok, access_token}
+    else
+      _ -> AccessTokens.create_token(resource_owner, token_params, config)
     end
   end
 

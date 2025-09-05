@@ -37,6 +37,7 @@ defmodule ExOauth2Provider.Mixfile do
       {:ecto, "~> 3.10"},
       {:plug, ">= 1.5.0 and < 2.0.0"},
       {:jason, "~> 1.2"},
+      {:jose, "~> 1.11.10"},
 
       # Dev and test dependencies
       {:credo, "~> 1.5", only: [:dev, :test]},

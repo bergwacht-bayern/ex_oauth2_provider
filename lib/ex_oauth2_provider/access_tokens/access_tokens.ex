@@ -34,6 +34,12 @@ defmodule ExOauth2Provider.AccessTokens do
     |> Config.repo(config).get_by(token: token)
   end
 
+  def get_by_nonce(nonce, config \\ []) do
+    config
+    |> Config.access_token()
+    |> Config.repo(config).get_by(nonce: nonce)
+  end
+
   @doc """
   Gets an access token by the refresh token.
 

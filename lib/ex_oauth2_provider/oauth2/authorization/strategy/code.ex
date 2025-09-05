@@ -99,6 +99,13 @@ defmodule ExOauth2Provider.Authorization.Code do
 
   defp check_previous_authorization({:error, params}, _config), do: {:error, params}
   defp check_previous_authorization({:ok, %{resource_owner: resource_owner, client: application, request: %{"scope" => scopes}} = params}, config) do
+    # with token when not is_nil(token) <- AccessTokens.get_token_for(resource_owner, application, scopes, config),
+    #     true <- token.nonce == params["nonce"] do
+    #   {:ok, Map.put(params, :access_token, token)}
+    # else
+    #   _ -> {:ok, params}
+    # end
+
     case AccessTokens.get_token_for(resource_owner, application, scopes, config) do
       nil   -> {:ok, params}
       token -> {:ok, Map.put(params, :access_token, token)}

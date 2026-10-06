@@ -63,7 +63,8 @@ defmodule ExOauth2Provider.Authorization.Code do
     Authorization.Utils.Response,
     RedirectURI,
     Scopes,
-    Utils.Error
+    Utils.Error,
+    Utils.Validation
   }
 
   alias Ecto.Schema

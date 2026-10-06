@@ -86,6 +86,15 @@ defmodule ExOauth2Provider.Token.Strategy.AuthorizationCodeTest do
     assert body.access_token == body2.access_token
   end
 
+  test "#grant/2 issues a new access token when reuse_access_token is off", %{resource_owner: resource_owner, application: application} do
+    assert {:ok, body} = Token.grant(@valid_request, otp_app: :ex_oauth2_provider)
+    access_grant = Fixtures.access_grant(application, resource_owner, "new_code", @redirect_uri)
+    valid_request = Map.merge(@valid_request, %{"code" => access_grant.token})
+    assert {:ok, body2} = Token.grant(valid_request, otp_app: :ex_oauth2_provider, reuse_access_token: false)
+
+    refute body.access_token == body2.access_token
+  end
+
   test "#grant/2 error when invalid client" do
     request_invalid_client = Map.merge(@valid_request, %{"client_id" => "invalid"})
 

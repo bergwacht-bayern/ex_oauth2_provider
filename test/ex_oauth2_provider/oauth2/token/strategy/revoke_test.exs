@@ -65,6 +65,24 @@ defmodule ExOauth2Provider.Token.Strategy.RevokeTest do
     assert AccessTokens.is_revoked?(QueryHelpers.get_latest_inserted(OauthAccessToken))
   end
 
+  test "#revoke/2 with a refresh token", %{valid_request: valid_request, access_token: access_token} do
+    params = Map.merge(valid_request, %{"token" => access_token.refresh_token})
+
+    assert Token.revoke(params, otp_app: :ex_oauth2_provider) == {:ok, %{}}
+    assert AccessTokens.is_revoked?(QueryHelpers.get_latest_inserted(OauthAccessToken))
+  end
+
+  test "#revoke/2 with an ID token hint revokes the latest token with its nonce", %{valid_request: valid_request, access_token: access_token} do
+    QueryHelpers.change!(access_token, nonce: "n-1")
+    application = QueryHelpers.get_latest_inserted(Dummy.OauthApplications.OauthApplication)
+    newer = Fixtures.access_token(resource_owner: Fixtures.resource_owner(), application: application, use_refresh_token: true, scopes: "app:read")
+    QueryHelpers.change!(newer, nonce: "n-1")
+    {_, id_token} = JOSE.JWT.sign(JOSE.JWK.from_oct("key"), %{"alg" => "HS256"}, %{"nonce" => "n-1"}) |> JOSE.JWS.compact()
+
+    assert Token.revoke(Map.merge(valid_request, %{"token" => id_token}), otp_app: :ex_oauth2_provider) == {:ok, %{}}
+    assert AccessTokens.is_revoked?(AccessTokens.get_by_token(newer.token, otp_app: :ex_oauth2_provider))
+  end
+
   test "#revoke/2", %{valid_request: valid_request} do
     assert Token.revoke(valid_request, otp_app: :ex_oauth2_provider) == {:ok, %{}}
     assert AccessTokens.is_revoked?(QueryHelpers.get_latest_inserted(OauthAccessToken))

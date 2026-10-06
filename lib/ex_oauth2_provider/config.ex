@@ -116,6 +116,15 @@ defmodule ExOauth2Provider.Config do
   def refresh_token_revoked_on_use?(config),
     do: get(config, :revoke_refresh_token_on_use, false)
 
+  # Hand out the resource owner's existing, still accessible access token
+  # (same application, scopes and nonce) on an authorization code exchange
+  # instead of creating a new one (enabled by default). Disable it when every
+  # sign-in (e.g. every device) should get tokens of its own, which rotating
+  # refresh tokens need.
+  @spec reuse_access_token?(keyword()) :: boolean()
+  def reuse_access_token?(config),
+    do: get(config, :reuse_access_token, true)
+
   # Forces the usage of the HTTPS protocol in non-native redirect uris
   # (enabled by default in non-development environments). OAuth2
   # delegates security in communication to the HTTPS protocol so it is

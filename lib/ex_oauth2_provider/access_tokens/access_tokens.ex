@@ -34,10 +34,18 @@ defmodule ExOauth2Provider.AccessTokens do
     |> Config.repo(config).get_by(token: token)
   end
 
+  @doc """
+  Gets the most recent, not revoked access token with the nonce. Refreshing
+  a token carries its nonce over, so several tokens can share one.
+  """
+  @spec get_by_nonce(binary(), keyword()) :: AccessToken.t() | nil
   def get_by_nonce(nonce, config \\ []) do
     config
     |> Config.access_token()
-    |> Config.repo(config).get_by(nonce: nonce)
+    |> where([a], a.nonce == ^nonce and is_nil(a.revoked_at))
+    |> order_by([a], desc: a.inserted_at, desc: a.id)
+    |> limit(1)
+    |> Config.repo(config).one()
   end
 
   @doc """

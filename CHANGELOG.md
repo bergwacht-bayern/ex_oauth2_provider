@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased (bergwacht-bayern fork)
+
+* PKCE (`use_pkce: true`, `plain` and `S256`) and an optional `nonce` on grants and tokens
+* `reuse_access_token` (default `true`): set it to `false` so every authorization code exchange issues a new token instead of handing out an existing one; the reuse check no longer depends on a host app's schema module
+* `AccessTokens.get_by_nonce/2` returns the newest unrevoked token instead of raising when refreshes share a nonce
+* Revocation: refresh tokens can be revoked again (the ID token hint fallback ran first and failed), non-JWT tokens no longer crash it, and a presented client may only revoke its own tokens
+* Fixed the missing `Validation` alias that crashed `plain` code challenges
+
 ## v0.5.7 (2023-08-05)
 
 Requires Elixir 1.12+.

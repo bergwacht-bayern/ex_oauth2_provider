@@ -7,6 +7,7 @@
 * `AccessTokens.get_by_nonce/2` returns the newest unrevoked token instead of raising when refreshes share a nonce
 * Revocation: refresh tokens can be revoked again (the ID token hint fallback ran first and failed), non-JWT tokens no longer crash it, and a presented client may only revoke its own tokens
 * Fixed the missing `Validation` alias that crashed `plain` code challenges
+* An authorization request for a part of the scopes approved before skips the approval: `AccessTokens.get_authorized_token_for/4` accepts a live token carrying more scopes than requested. The code exchange still hands out an existing token only on an exact match
 
 ## v0.5.7 (2023-08-05)
 

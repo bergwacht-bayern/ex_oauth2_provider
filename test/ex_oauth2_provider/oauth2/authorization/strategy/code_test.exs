@@ -51,17 +51,50 @@ defmodule ExOauth2Provider.Authorization.CodeTest do
     assert Authorization.preauthorize(resource_owner, @valid_request, otp_app: :ex_oauth2_provider) == {:ok, application, expected_scopes}
   end
 
-  test "#preauthorize/3 when previous access token with different application scopes", %{resource_owner: resource_owner, application: application} do
-    access_token = Fixtures.access_token(resource_owner: resource_owner, application: application, scopes: "app:read")
+  test "#preauthorize/3 when previous access token with fewer scopes", %{resource_owner: resource_owner, application: application} do
+    Fixtures.access_token(resource_owner: resource_owner, application: application, scopes: "app:read")
     expected_scopes = Scopes.to_list(@valid_request["scope"])
 
     assert Authorization.preauthorize(resource_owner, @valid_request, otp_app: :ex_oauth2_provider) == {:ok, application, expected_scopes}
+  end
 
-    QueryHelpers.change!(access_token, scopes: "app:read app:write")
+  test "#preauthorize/3 when previous access token with other scopes", %{resource_owner: resource_owner, application: application} do
+    Fixtures.access_token(resource_owner: resource_owner, application: application, scopes: "app:write")
     request = Map.merge(@valid_request, %{"scope" => "app:read"})
-    expected_scopes = Scopes.to_list(request["scope"])
 
-    assert Authorization.preauthorize(resource_owner, request, otp_app: :ex_oauth2_provider) == {:ok, application, expected_scopes}
+    assert Authorization.preauthorize(resource_owner, request, otp_app: :ex_oauth2_provider) == {:ok, application, ["app:read"]}
+  end
+
+  test "#preauthorize/3 when previous access token covers the scopes", %{resource_owner: resource_owner, application: application} do
+    Fixtures.access_token(resource_owner: resource_owner, application: application, scopes: "app:read app:write")
+    request = Map.merge(@valid_request, %{"scope" => "app:read"})
+
+    assert {:native_redirect, %{code: code}} = Authorization.preauthorize(resource_owner, request, otp_app: :ex_oauth2_provider)
+    access_grant = QueryHelpers.get_latest_inserted(OauthAccessGrant)
+
+    assert code == access_grant.token
+    assert access_grant.scopes == "app:read"
+  end
+
+  test "#preauthorize/3 when the covering access token is revoked or expired", %{resource_owner: resource_owner, application: application} do
+    request = Map.merge(@valid_request, %{"scope" => "app:read"})
+    revoked = Fixtures.access_token(resource_owner: resource_owner, application: application, scopes: "app:read app:write")
+    QueryHelpers.change!(revoked, revoked_at: DateTime.utc_now())
+
+    assert Authorization.preauthorize(resource_owner, request, otp_app: :ex_oauth2_provider) == {:ok, application, ["app:read"]}
+
+    expired = Fixtures.access_token(resource_owner: resource_owner, application: application, scopes: "app:read app:write")
+    QueryHelpers.change!(expired, inserted_at: QueryHelpers.timestamp(expired.__struct__, :inserted_at, seconds: -expired.expires_in))
+
+    assert Authorization.preauthorize(resource_owner, request, otp_app: :ex_oauth2_provider) == {:ok, application, ["app:read"]}
+  end
+
+  test "#preauthorize/3 when another application's access token covers the scopes", %{resource_owner: resource_owner, application: application} do
+    other = Fixtures.application(uid: "other", scopes: "app:read app:write")
+    Fixtures.access_token(resource_owner: resource_owner, application: other, scopes: "app:read app:write")
+    request = Map.merge(@valid_request, %{"scope" => "app:read"})
+
+    assert Authorization.preauthorize(resource_owner, request, otp_app: :ex_oauth2_provider) == {:ok, application, ["app:read"]}
   end
 
   test "#preauthorize/3 with limited scope", %{resource_owner: resource_owner, application: application} do

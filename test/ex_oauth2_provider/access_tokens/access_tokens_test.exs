@@ -94,6 +94,7 @@ defmodule ExOauth2Provider.AccessTokensTest do
       assert id == access_token2.id
 
       refute AccessTokens.get_token_for(user, nil, "other_read", otp_app: :ex_oauth2_provider)
+      refute AccessTokens.get_token_for(user, nil, "read", otp_app: :ex_oauth2_provider)
     end
 
     test "filters revoked", %{user: user} do
@@ -113,6 +114,32 @@ defmodule ExOauth2Provider.AccessTokensTest do
       QueryHelpers.change!(access_token, inserted_at: inserted_at)
 
       refute AccessTokens.get_token_for(user, nil, nil, otp_app: :ex_oauth2_provider)
+    end
+  end
+
+  describe "get_authorized_token_for/4" do
+    test "finds a token covering the scopes", %{user: user, application: application} do
+      {:ok, access_token} = AccessTokens.create_token(user, %{application: application, scopes: "read write"}, otp_app: :ex_oauth2_provider)
+
+      for scopes <- ["read", "write", "write read"] do
+        assert %OauthAccessToken{id: id} = AccessTokens.get_authorized_token_for(user, application, scopes, otp_app: :ex_oauth2_provider)
+        assert id == access_token.id
+      end
+
+      refute AccessTokens.get_authorized_token_for(user, application, "read public", otp_app: :ex_oauth2_provider)
+      refute AccessTokens.get_authorized_token_for(Fixtures.resource_owner(), application, "read", otp_app: :ex_oauth2_provider)
+      refute AccessTokens.get_authorized_token_for(user, Fixtures.application(uid: "other"), "read", otp_app: :ex_oauth2_provider)
+    end
+
+    test "filters revoked and expired", %{user: user, application: application} do
+      {:ok, access_token} = AccessTokens.create_token(user, %{application: application, scopes: "read write"}, otp_app: :ex_oauth2_provider)
+      AccessTokens.revoke(access_token)
+      refute AccessTokens.get_authorized_token_for(user, application, "read", otp_app: :ex_oauth2_provider)
+
+      {:ok, access_token} = AccessTokens.create_token(user, %{application: application, scopes: "read write"}, otp_app: :ex_oauth2_provider)
+      inserted_at = QueryHelpers.timestamp(access_token.__struct__, :inserted_at, seconds: -access_token.expires_in)
+      QueryHelpers.change!(access_token, inserted_at: inserted_at)
+      refute AccessTokens.get_authorized_token_for(user, application, "read", otp_app: :ex_oauth2_provider)
     end
   end
 

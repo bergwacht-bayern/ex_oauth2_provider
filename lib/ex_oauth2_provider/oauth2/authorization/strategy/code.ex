@@ -107,7 +107,9 @@ defmodule ExOauth2Provider.Authorization.Code do
     #   _ -> {:ok, params}
     # end
 
-    case AccessTokens.get_token_for(resource_owner, application, scopes, config) do
+    # Approving scopes approves any part of them, so a token carrying more
+    # than the request still counts. The grant gets the requested scopes only.
+    case AccessTokens.get_authorized_token_for(resource_owner, application, scopes, config) do
       nil   -> {:ok, params}
       token -> {:ok, Map.put(params, :access_token, token)}
     end

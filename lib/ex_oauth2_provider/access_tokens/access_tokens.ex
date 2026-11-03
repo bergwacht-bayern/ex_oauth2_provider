@@ -105,6 +105,29 @@ defmodule ExOauth2Provider.AccessTokens do
   end
 
   @doc """
+  Gets the most recent, accessible access token for a resource owner that
+  covers the scopes: it may carry more than them. This tells whether the
+  resource owner approved the scopes before, unlike `get_token_for/4`, which
+  finds a token to hand out again and so has to match the scopes exactly.
+
+  ## Examples
+
+      iex> get_authorized_token_for(resource_owner, application, "read", otp_app: :my_app)
+      %OauthAccessToken{scopes: "read write"}
+
+      iex> get_authorized_token_for(resource_owner, application, "read invalid", otp_app: :my_app)
+      nil
+  """
+  @spec get_authorized_token_for(Schema.t(), Application.t(), binary(), keyword()) :: AccessToken.t() | nil
+  def get_authorized_token_for(resource_owner, application, scopes, config \\ []) do
+    config
+    |> Config.access_token()
+    |> scope_belongs_to(:resource_owner_id, resource_owner)
+    |> scope_belongs_to(:application_id, application)
+    |> load_matching_token_for(application, scopes, config, &ScopesUtils.all?/2)
+  end
+
+  @doc """
   Gets the most recent, acccessible, matching access token for an application.
 
   ## Examples
@@ -124,7 +147,7 @@ defmodule ExOauth2Provider.AccessTokens do
     |> load_matching_token_for(application, scopes, config)
   end
 
-  defp load_matching_token_for(queryable, application, scopes, config) do
+  defp load_matching_token_for(queryable, application, scopes, config, match \\ &ScopesUtils.equal?/2) do
     now =
       config
       |> Config.access_token()
@@ -138,26 +161,12 @@ defmodule ExOauth2Provider.AccessTokens do
     |> order_by([a], desc: a.inserted_at, desc: :id)
     |> Config.repo(config).all()
     |> Enum.filter(&is_accessible?/1)
-    |> check_matching_scopes(scopes)
+    |> Enum.find(&match.(ScopesUtils.to_list(&1.scopes), ScopesUtils.to_list(scopes)))
   end
 
   defp maybe_build_scopes(_application, scopes, _config) when is_binary(scopes), do: scopes
   defp maybe_build_scopes(%{scopes: server_scopes}, nil, config), do: Scopes.parse_default_scope_string(server_scopes, config)
   defp maybe_build_scopes(_application, nil, config), do: Scopes.parse_default_scope_string(nil, config)
-
-  defp check_matching_scopes(tokens, scopes) when is_list(tokens) do
-    Enum.find(tokens, nil, &check_matching_scopes(&1, scopes))
-  end
-  defp check_matching_scopes(nil, _), do: nil
-  defp check_matching_scopes(token, scopes) do
-    token_scopes   = ScopesUtils.to_list(token.scopes)
-    request_scopes = ScopesUtils.to_list(scopes)
-
-    case ScopesUtils.equal?(token_scopes, request_scopes) do
-      true -> token
-      _    -> nil
-    end
-  end
 
   @doc """
   Gets all authorized access tokens for resource owner.

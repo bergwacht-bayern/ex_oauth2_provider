@@ -86,6 +86,15 @@ defmodule ExOauth2Provider.Token.Strategy.AuthorizationCodeTest do
     assert body.access_token == body2.access_token
   end
 
+  test "#grant/2 doesn't hand out an access token with more scopes than the grant", %{resource_owner: resource_owner, application: application} do
+    broader = Fixtures.access_token(resource_owner: resource_owner, application: application, scopes: "read write")
+
+    assert {:ok, body} = Token.grant(@valid_request, otp_app: :ex_oauth2_provider)
+
+    refute body.access_token == broader.token
+    assert QueryHelpers.get_latest_inserted(OauthAccessToken).scopes == "read"
+  end
+
   test "#grant/2 issues a new access token when reuse_access_token is off", %{resource_owner: resource_owner, application: application} do
     assert {:ok, body} = Token.grant(@valid_request, otp_app: :ex_oauth2_provider)
     access_grant = Fixtures.access_grant(application, resource_owner, "new_code", @redirect_uri)
